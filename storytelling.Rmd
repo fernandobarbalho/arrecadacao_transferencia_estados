@@ -5,7 +5,7 @@ date: "2024-04-16"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 library(tidyverse)
 library(readxl)
 
@@ -25,27 +25,27 @@ dados_populacao <- tibble(
 ```
 
 ```{r}
-gastos_uniao_uf %>%
-  filter(uf!="Total") %>%
-  pivot_longer(cols = -1,
-               names_to = "rubrica",
-               values_to = "valor") %>%
-  filter(rubrica=="total") %>%
-  mutate(tipo = "Gastos da união no estado") %>%
-  bind_rows(
-    receitas_uniao_uf %>%
-      filter(uf!="Total") %>%
-      pivot_longer(cols = -1,
-                   names_to = "rubrica",
-                   values_to = "valor") %>%
-      filter(rubrica=="total") %>%
-      mutate(tipo = "Receitas da união")) %>%
-  select(uf,tipo, valor) %>%
-  pivot_wider(names_from = tipo,
-              values_from = valor) %>%
-  mutate(saldo = `Receitas da união` - `Gastos da união no estado`) %>%
-  arrange(saldo) %>%
-  writexl::write_xlsx("tabela_saldo.xlsx")
+# gastos_uniao_uf %>%
+#   filter(uf!="Total") %>%
+#   pivot_longer(cols = -1,
+#                names_to = "rubrica",
+#                values_to = "valor") %>%
+#   filter(rubrica=="total") %>%
+#   mutate(tipo = "Gastos da união no estado") %>%
+#   bind_rows(
+#     receitas_uniao_uf %>%
+#       filter(uf!="Total") %>%
+#       pivot_longer(cols = -1,
+#                    names_to = "rubrica",
+#                    values_to = "valor") %>%
+#       filter(rubrica=="total") %>%
+#       mutate(tipo = "Receitas da união")) %>%
+#   select(uf,tipo, valor) %>%
+#   pivot_wider(names_from = tipo,
+#               values_from = valor) %>%
+#   mutate(saldo = `Receitas da união` - `Gastos da união no estado`) %>%
+#   arrange(saldo) %>%
+#   writexl::write_xlsx("tabela_saldo.xlsx")
 
 ```
 
@@ -142,7 +142,20 @@ gastos_uniao_uf %>%
                values_to = "valor") %>%
   select(-saldo) %>%
   ggplot(aes(x=uf, y=valor)) +
-  geom_col(aes(fill = rubrica), position = "dodge")
+  geom_col(aes(fill = rubrica), position = "dodge") +
+  theme_light() +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.x = element_text(angle = 90,  vjust = 0.5, hjust = 1),
+    legend.position = "top"
+  )+
+  scale_y_continuous(labels = scales::comma_format(big.mark = ".")) +
+  labs(
+    x="",
+    y= "valor per capita",
+    title = "Receita da União e gastos nos estados",
+    fill = ""
+  )
 
 ```
 
