@@ -1,0 +1,148 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-04-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(readxl)
+
+gastos_uniao_uf <- read_excel("gastos_uniao_uf.xlsx")
+
+receitas_uniao_uf <- read_excel("receitas_uniao_uf.xlsx")
+
+
+# Criar um tibble com a sigla da UF e a população
+dados_populacao <- tibble(
+  uf = c("SP", "MG", "RJ", "BA", "PR", "RS", "PE", "CE", "PA", "SC", "MA", "GO", "AM", "ES", "PB", "RN", "MT", "AL", "PI", "DF", "MS", "SE", "RO", "TO", "AC", "AP", "RR"),
+  populacao = c(44396484, 20869101, 16615526, 14659023, 11516840, 11377239, 9051113, 8936431, 8442962, 7252502, 6800605, 6950976, 4207714, 3975100, 4030961, 3303953, 3484466, 3125254, 3270174, 3094325, 2839188, 2211868, 1816948, 1607363, 906876, 877613, 652713)
+)
+
+
+
+```
+
+```{r}
+gastos_uniao_uf %>%
+  filter(uf!="Total") %>%
+  pivot_longer(cols = -1,
+               names_to = "rubrica",
+               values_to = "valor") %>%
+  filter(rubrica=="total") %>%
+  mutate(tipo = "Gastos da união no estado") %>%
+  bind_rows(
+    receitas_uniao_uf %>%
+      filter(uf!="Total") %>%
+      pivot_longer(cols = -1,
+                   names_to = "rubrica",
+                   values_to = "valor") %>%
+      filter(rubrica=="total") %>%
+      mutate(tipo = "Receitas da união")) %>%
+  select(uf,tipo, valor) %>%
+  pivot_wider(names_from = tipo,
+              values_from = valor) %>%
+  mutate(saldo = `Receitas da união` - `Gastos da união no estado`) %>%
+  arrange(saldo) %>%
+  writexl::write_xlsx("tabela_saldo.xlsx")
+
+```
+
+
+```{r}
+
+receitas_uniao_uf %>%
+  filter(uf!="Total") %>%
+  pivot_longer(cols = -1,
+               names_to = "rubrica",
+               values_to = "valor") %>%
+  filter(rubrica=="total") %>%
+  mutate(valor = valor/10^3) %>%
+  mutate(uf = fct_reorder(uf,valor, sum)) %>%
+  ggplot(aes(x=valor, y=uf)) +
+  geom_col()
+
+```
+
+```{r}
+gastos_uniao_uf %>%
+  filter(uf!="Total") %>%
+  pivot_longer(cols = -1,
+               names_to = "rubrica",
+               values_to = "valor") %>%
+  filter(rubrica=="total")%>%
+  mutate(valor = valor/10^3) %>%
+  mutate(uf = fct_reorder(uf,valor, sum)) %>%
+  ggplot(aes(x=valor, y=uf)) +
+  geom_col()
+ 
+```
+
+```{r}
+receitas_uniao_uf %>%
+  filter(uf!="Total") %>%
+  pivot_longer(cols = -1,
+               names_to = "rubrica",
+               values_to = "valor") %>%
+  filter(rubrica=="total") %>%
+  inner_join(dados_populacao) %>%
+  mutate(valor_pc = valor*10^6/populacao) %>%
+  mutate(uf = fct_reorder(uf,valor_pc, sum)) %>%
+  ggplot(aes(x=valor_pc, y=uf)) +
+  geom_col()
+
+
+```
+
+
+```{r}
+
+gastos_uniao_uf %>%
+  filter(uf!="Total") %>%
+  pivot_longer(cols = -1,
+               names_to = "rubrica",
+               values_to = "valor") %>%
+  filter(rubrica=="total")%>%
+  inner_join(dados_populacao) %>%
+  mutate(valor_pc = valor*10^6/populacao) %>%
+  mutate(uf = fct_reorder(uf,valor_pc, sum)) %>%
+  ggplot(aes(x=valor_pc, y=uf)) +
+  geom_col()
+
+```
+
+```{r}
+gastos_uniao_uf %>%
+  filter(uf!="Total") %>%
+  pivot_longer(cols = -1,
+               names_to = "rubrica",
+               values_to = "valor") %>%
+  filter(rubrica=="total") %>%
+  mutate(tipo = "Gastos da união no estado") %>%
+  bind_rows(
+    receitas_uniao_uf %>%
+      filter(uf!="Total") %>%
+      pivot_longer(cols = -1,
+                   names_to = "rubrica",
+                   values_to = "valor") %>%
+      filter(rubrica=="total") %>%
+      mutate(tipo = "Receitas da união")) %>%
+  select(uf,tipo, valor) %>%
+  mutate(valor = valor*10^6) %>%
+  inner_join(dados_populacao) %>%
+  mutate(valor_per_capita = valor/populacao) %>%
+  select(-valor) %>%
+  pivot_wider(names_from = tipo,
+              values_from = valor_per_capita) %>%
+  mutate(saldo = `Receitas da união` - `Gastos da união no estado`) %>%
+  mutate(uf =reorder(uf, saldo)) %>%
+  pivot_longer(cols = c(`Receitas da união`, `Gastos da união no estado`),
+               names_to = "rubrica",
+               values_to = "valor") %>%
+  select(-saldo) %>%
+  ggplot(aes(x=uf, y=valor)) +
+  geom_col(aes(fill = rubrica), position = "dodge")
+
+```
+
